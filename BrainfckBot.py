@@ -42,12 +42,12 @@ def bf_to_text(string):
 
 
 def start(bot, update):
-    message = "Welcome to Brainf*ckBot. \n----------------------------------\nOptions:\nℹ️ /help To display the options\n🔒 /code <Message> To code a message\n🔑 /decode <Message to Decode> To decode a message\n🤓 /info To view the author"
+    message = "Welcome to Brainf*ckBot. \n----------------------------------\nOptions:\nℹ️ /help To display the options\n🔒 /code <Natural language message> To code a message\n🔑 /decode <Brainfuck message> To decode a message\n🤓 /info To view the author"
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 
 def help(bot, update):
-    message = "Brainf*ckBot. \n----------------------------------\nOptions:\nℹ️ /help To display the options\n🔒 /code <Message> To code a message\n🔑 /decode <Message to Decode> To decode a message\n🤓 /info To view the creator"
+    message = "Brainf*ckBot. \n----------------------------------\nOptions:\nℹ️ /help To display the options\n🔒 /code <Natural language message> To code a message\n🔑 /decode <Brainfuck message> To decode a message\n🤓 /info To view the creator"
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 
@@ -55,24 +55,31 @@ def code(bot, update, args):
     if not args:
         bot.send_message(chat_id=update.message.chat_id, text="⚠️ You have not inserted any message to code")
     else:
-        text = ""
-        for word in args:
-            text = text + word + ' '
-        print(text_to_bf(text))
-        bot.send_message(chat_id=update.message.chat_id, text=text_to_bf(text))
+        if len(args) > 140:
+            bot.send_message(chat_id=update.message.chat_id, text="⚠️ The maximum message size is 140 characters")
+        else:
+            text = ""
+            for word in args:
+                text = text + word + ' '
+            print(text_to_bf(text))
+            bot.send_message(chat_id=update.message.chat_id, text=text_to_bf(text))
 
 
 def decode(bot, update, args):
     if not args:
         bot.send_message(chat_id=update.message.chat_id, text="⚠️ You have not inserted any message to decode")
-    bf = ""
-    for word in args:
-        bf = bf + word + ' '
-    bot.send_message(chat_id=update.message.chat_id, text=bf_to_text(bf))
+    else:
+        if len(args) > 140:
+            bot.send_message(chat_id=update.message.chat_id, text="⚠️ The maximum message size is 140 characters")
+        else:
+            bf = ""
+            for word in args:
+                bf = bf + word + ' '
+            bot.send_message(chat_id=update.message.chat_id, text=bf_to_text(bf))
 
 
 def info(bot, update):
-    message = "Bot created by 👨‍💻 @iLongo (ilongo.github.io) \nThanks to yiangos"
+    message = "Bot created by 👨‍💻 @iLongo (ilongo.github.io) \nThanks to bareba and yiangos"
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 
