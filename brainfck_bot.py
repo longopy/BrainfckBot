@@ -7,7 +7,7 @@ from random import getrandbits
 import bf2t
 
 BOT_TOKEN = "BOT_TOKEN"
-BOT_IMAGE = 'BOT_IMAGE'
+BOT_IMAGE = 'BOT_IMAGE_URL'
 BOT = telegram.Bot(token=BOT_TOKEN)
 updater = Updater(BOT_TOKEN)
 
@@ -28,7 +28,6 @@ def text_to_bf(data):
         new_bin = [abs(ord(char) - b)
                    for b in bins].index(min([abs(ord(char) - b)
                                              for b in bins]))
-        appending_character = ""
         if new_bin - current_bin > 0:
             appending_character = ">"
         else:
@@ -91,12 +90,14 @@ def inline(bot, update):
 
 def code_command(bot, update, args):
     text = code(bot, update, args, False)
-    bot.send_message(chat_id=update.message.chat_id, text=text)
+    if text:
+        bot.send_message(chat_id=update.message.chat_id, text=text)
 
 
 def code(bot, update, input_text, inline_flag):
     if not input_text:
-        bot.send_message(chat_id=update.message.chat_id, text="⚠️ You have not inserted any message to code")
+        text = "⚠️ You have not inserted any message to code"
+        return text
     else:
         if inline_flag:
             user = update.inline_query.from_user
@@ -105,7 +106,8 @@ def code(bot, update, input_text, inline_flag):
         if len(input_text[0]) > 140:
             logger.warning('[/code] {inline} The maximum message size is 140 characters'.format(
                 inline="[inline]" if inline_flag else ""))
-            bot.send_message(chat_id=update.message.chat_id, text="⚠️ The maximum message size is 140 characters")
+            text = "⚠️ The maximum message size is 140 characters"
+            return text
         else:
             text = ""
             for word in input_text:
@@ -119,12 +121,14 @@ def code(bot, update, input_text, inline_flag):
 
 def decode_command(bot, update, args):
     text = decode(bot, update, args, False)
-    bot.send_message(chat_id=update.message.chat_id, text=text)
+    if text:
+        bot.send_message(chat_id=update.message.chat_id, text=text)
 
 
 def decode(bot, update, input_text, inline_flag):
     if not input_text:
-        bot.send_message(chat_id=update.message.chat_id, text="⚠️ You have not inserted any message to decode")
+        text = "⚠️ You have not inserted any message to decode"
+        return text
     else:
         if inline_flag:
             user = update.inline_query.from_user
