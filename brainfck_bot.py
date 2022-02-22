@@ -1,3 +1,4 @@
+import os
 import coloredlogs
 import logging
 import telegram
@@ -6,8 +7,8 @@ from telegram import InlineQueryResultArticle, InputTextMessageContent
 from random import getrandbits
 import bf2t
 
-BOT_TOKEN = "BOT_TOKEN"
-BOT_IMAGE = 'BOT_IMAGE_URL'
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+BOT_IMAGE = os.getenv('BOT_IMAGE')
 BOT = telegram.Bot(token=BOT_TOKEN)
 updater = Updater(BOT_TOKEN)
 
