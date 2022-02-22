@@ -148,7 +148,7 @@ def decode(bot, update, input_text, inline_flag):
 
 def info(bot, update):
     user = update.message.from_user
-    message = "Bot created by 👨‍💻 @iLongo (ilongo.github.io) \nThanks to bareba and yiangos"
+    message = "Bot created by 👨‍💻 @longopy (https://github.com/longopy) \nThanks to bareba and yiangos"
     logger.debug('[/info] _id:{id} _username:{username}'.format(id=user.id, username=user.username))
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
