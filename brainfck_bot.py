@@ -7,10 +7,10 @@ from telegram import InlineQueryResultArticle, InputTextMessageContent
 from random import getrandbits
 import bf2t
 
-BOT_TOKEN = os.getenv('BOT_TOKEN')
-BOT_IMAGE = os.getenv('BOT_IMAGE')
+BOT_TOKEN = os.environ.get('BOT_TOKEN')
+BOT_IMAGE = os.environ.get('BOT_IMAGE')
 BOT = telegram.Bot(token=BOT_TOKEN)
-updater = Updater(BOT_TOKEN)
+updater = Updater(BOT_TOKEN, use_context=False)
 
 logger = logging.getLogger('BrainfckBot')
 coloredlogs.install(level='DEBUG', logger=logger, milliseconds=True)
