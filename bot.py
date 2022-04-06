@@ -1,11 +1,10 @@
 import logging
 import os
+import re
 from random import getrandbits
 
-import coloredlogs
-import telegram
-from telegram import InlineQueryResultArticle, InputTextMessageContent
-from telegram.ext import Updater, CommandHandler, InlineQueryHandler
+from telegram import InlineQueryResultArticle, InputTextMessageContent, Bot, Update
+from telegram.ext import Updater, CommandHandler, InlineQueryHandler, MessageHandler, Filters, CallbackContext
 from wrapt_timeout_decorator import timeout
 
 import bf2t
@@ -13,11 +12,6 @@ import bf2t
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 BOT_IMAGE = os.environ.get("BOT_IMAGE")
 MAX_LENGTH = os.environ.get("MAX_LENGTH", 350)
-BOT = telegram.Bot(token=BOT_TOKEN)
-
-logger = logging.getLogger('BrainfckBot')
-updater = Updater(BOT_TOKEN, use_context=False)
-coloredlogs.install(level="DEBUG", logger=logger, milliseconds=True)
 
 
 def text_to_bf(data):
@@ -52,34 +46,26 @@ def bf_to_text(string):
     return parser.execute(string)
 
 
-def start(bot, update):
+def start(update: Update, context: CallbackContext) -> None:
     user = update.message.from_user
     message = "Welcome to Brainf*ckBot. \n----------------------------------\nI hope you have fun.\n\nLook at the things you can do: \nℹ️ /help To display the full options\n🔒 /info To view the author"
     logger.debug("[/start] _id:{id} _username:{username}".format(id=user.id, username=user.username))
-    bot.send_message(chat_id=update.message.chat_id, text=message)
+    update.message.reply_text(text=message)
 
 
-def help(bot, update):
+def help(update: Update, context: CallbackContext):
     user = update.message.from_user
-    message = "Brainf*ckBot. \n----------------------------------\nOptions:\nℹ️ /help To display the options\n🔒 /code <Natural language message> To code a message\n🔑 /decode <Brainfuck message> To decode a message\n🤓 /info To view the author\n\nNOW!\n You can use this bot on inline mode:\nSteps:\n1-Go to a friend's chat\n2-Type the command you want in the message box, naming the bot and adding a message\n(@Brainfckbot /code <text> or @Brainfckbot /decode <bf>)\n3-Send the result to your friends\nHAVE FUN!"
+    message = "Brainf*ckBot. \n----------------------------------\nOptions:\nℹ️ /help To display the options\n🤓 /info To view the author\n\nYou can send a natural language text or a brainfuck language text and the bot will translate it for you.\nTRY IT!\n\nNOW!\nYou can use this bot on inline mode:\nSteps:\n1-Go to a friend's chat\n2-Type the command you want in the message box, naming the bot and adding a message\n(@Brainfckbot <text> or <bf_text>)\n3-Send the result to your friends\nHAVE FUN!"
     logger.debug("[/help] _id:{id} _username:{username}".format(id=user.id, username=user.username))
-    bot.send_message(chat_id=update.message.chat_id, text=message)
+    update.message.reply_text(text=message)
 
 
-def inline(bot, update):
+def inline(update: Update, context: CallbackContext):
     query = update.inline_query.query
     if not query:
         return
-    query = query.split(" ", 1)
-    text = query[1:]
-    command = (query[0])[1:]
-    result = message = ""
-    if command == "code":
-        message = "Send coded text: "
-        result = code(bot, update, text, True)
-    if command == "decode":
-        message = "Send decoded text: "
-        result = decode(bot, update, text, True)
+    result = smart_command(update, query, True)
+    message = "Send text:"
     if result:
         results = list()
         text = InlineQueryResultArticle(
@@ -90,109 +76,93 @@ def inline(bot, update):
             input_message_content=InputTextMessageContent(result),
         )
         results.append(text)
-        bot.answerInlineQuery(update.inline_query.id, results=results)
+        update.inline_query.answer(results=results)
 
 
-def code_command(bot, update, args):
-    text = code(bot, update, args, False)
+def message_handler(update: Update, context: CallbackContext):
+    text = update.message.text
+    text = smart_command(update, text)
     if text:
-        bot.send_message(chat_id=update.message.chat_id, text=text)
+        update.message.reply_text(text=text)
 
 
-def code(bot, update, input_text, inline_flag):
-    if not input_text:
-        text = "⚠️ You have not inserted any message to code"
-        return text
+def smart_command(update: Update, input_text, inline_flag=False):
+    input_is_text = set(input_text) - set(".,+-><[]")
+    if input_is_text:
+        command, result = code(input_text)
     else:
-        if inline_flag:
-            user = update.inline_query.from_user
-        else:
-            user = update.message.from_user
-        if len(" ".join(input_text)) > MAX_LENGTH:
-            logger.warning(
-                "[/code] {inline} The maximum message size is {max_length} characters".format(
-                    inline="[inline]" if inline_flag else "",
-                    max_length=MAX_LENGTH,
-                )
-            )
-            text = "⚠️ The maximum message size is {max_length} characters".format(
-                    max_length=MAX_LENGTH,
-                )
-            return text
-        else:
-            text = ""
-            for word in input_text:
-                text = text + word + " "
-            bf_text = text_to_bf(text)
-            logger.debug(
-                "[/code] {inline} _id:{id} _username:{username} _text:{text} _bf:{bf}".format(
-                    inline="[inline]" if inline_flag else "",
-                    id=user.id,
-                    username=user.username,
-                    text=input_text[0],
-                    bf=bf_text,
-                )
-            )
-            return bf_text
-
-
-def decode_command(bot, update, args):
-    text = decode(bot, update, args, False)
-    if text:
-        bot.send_message(chat_id=update.message.chat_id, text=text)
-
-
-def decode(bot, update, input_text, inline_flag):
-    if not input_text:
-        text = "⚠️ You have not inserted any message to decode"
-        return text
+        command, result = decode(input_text)
+    user_id = update.message.from_user.id
+    if inline_flag:
+        username = update.inline_query.from_user.username
     else:
-        if inline_flag:
-            user = update.inline_query.from_user
-        else:
-            user = update.message.from_user
-        bf = ""
-        for word in input_text:
-            bf = bf + word + " "
-        try:
-            text = bf_to_text(bf)
-        except:
-            text = "🖕Do you think I suck my thumb? Don't try to break me."
-        logger.debug(
-            "[/decode] {inline} _id:{id} _username:{username} _text:{text} _bf:{bf}".format(
-                inline="[inline]" if inline_flag else "", id=user.id, username=user.username, text=text, bf=bf
-            )
+        username = update.message.from_user.username
+    if command == "code":
+        text = input_text
+        bf = result
+        logger.info(
+            f"[/{command}] {'[inline]' if inline_flag else ''} _:{user_id} _username:{username} _text:{text} _bf:{bf}"
         )
-        return text
+    elif command == "decode":
+        text = result
+        bf = input_text
+        logger.info(
+            f"[/{command}] {'[inline]' if inline_flag else ''} _id:{user_id} _username:{username} _bf:{text} _text:{bf}"
+        )
+    return result
 
 
-def info(bot, update):
+def code(input_text):
+    if len(" ".join(input_text)) > MAX_LENGTH:
+        logger.warning(f"[/code] The maximum message size is {MAX_LENGTH} characters")
+        text = f"⚠️ The maximum message size is {MAX_LENGTH} characters"
+        return "code", text
+    else:
+        text = ""
+        words = input_text.split(" ")
+        for word in words:
+            text = text + word + " "
+        bf_text = text_to_bf(text)
+        return "code", bf_text
+
+
+def decode(input_text):
+    bf = ""
+    for word in input_text:
+        bf = bf + word + " "
+    try:
+        text = bf_to_text(bf)
+    except:
+        text = "🖕Do you think I suck my thumb? Don't try to break me."
+    return "decode", text
+
+
+def info(update: Update, context: CallbackContext):
     user = update.message.from_user
-    message = "Bot created by 👨‍💻 @longopy (https://github.com/longopy) \nThanks to bareba and yiangos"
+    message = "Bot created by 👨‍💻 @longopy\nhttps://github.com/longopy\nThanks to bareba and yiangos"
     logger.debug("[/info] _id:{id} _username:{username}".format(id=user.id, username=user.username))
-    bot.send_message(chat_id=update.message.chat_id, text=message)
+    update.message.reply_text(text=message)
 
 
 if __name__ == "__main__":
+    BOT = Bot(token=BOT_TOKEN)
+    logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+    logger = logging.getLogger("BrainfckBot")
+    updater = Updater(BOT_TOKEN, use_context=True)
     logger.info("Starting...")
-
     try:
         logger.info("Connecting to the Telegram API...")
         dispatcher = updater.dispatcher
         dispatcher.add_handler(CommandHandler("start", start))
         dispatcher.add_handler(CommandHandler("help", help))
-        dispatcher.add_handler(CommandHandler("code", code_command, pass_args=True))
-        dispatcher.add_handler(CommandHandler("decode", decode_command, pass_args=True))
+        dispatcher.add_handler(MessageHandler((Filters.text & (~Filters.regex('/info'))), message_handler))
         dispatcher.add_handler(CommandHandler("info", info))
         dispatcher.add_handler(InlineQueryHandler(inline))
-
     except Exception as ex:
         logger.exception("Failure to connect with the Telegram API")
         quit()
-
     finally:
         logger.info("Connection completed")
-
-updater.start_polling()
-logger.info("Listening...")
-updater.idle()
+    updater.start_polling()
+    logger.info("Listening...")
+    updater.idle()
