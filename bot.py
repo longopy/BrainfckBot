@@ -93,11 +93,12 @@ def smart_command(update: Update, input_text, inline_flag=False):
         command, result = code(input_text)
     else:
         command, result = decode(input_text)
-    user_id = update.message.from_user.id
     if inline_flag:
         username = update.inline_query.from_user.username
+        user_id = update.inline_query.from_user.id
     else:
         username = update.message.from_user.username
+        user_id = update.message.from_user.id
     if command == "code":
         text = input_text
         bf = result
