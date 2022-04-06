@@ -1,19 +1,23 @@
-import os
-import coloredlogs
 import logging
-import telegram
-from telegram.ext import Updater, MessageHandler, CommandHandler, InlineQueryHandler, Filters
-from telegram import InlineQueryResultArticle, InputTextMessageContent
+import os
 from random import getrandbits
+
+import coloredlogs
+import telegram
+from telegram import InlineQueryResultArticle, InputTextMessageContent
+from telegram.ext import Updater, CommandHandler, InlineQueryHandler
+
 import bf2t
 
-BOT_TOKEN = os.environ.get('BOT_TOKEN')
-BOT_IMAGE = os.environ.get('BOT_IMAGE')
+HEROKU_APP_URL = os.environ.get('HEROKU_APP_URL')
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+BOT_IMAGE = os.environ.get("BOT_IMAGE")
+PORT = os.getenv('PORT', default=8443)
 BOT = telegram.Bot(token=BOT_TOKEN)
 updater = Updater(BOT_TOKEN, use_context=False)
 
-logger = logging.getLogger('BrainfckBot')
-coloredlogs.install(level='DEBUG', logger=logger, milliseconds=True)
+logger = logging.getLogger("BrainfckBot")
+coloredlogs.install(level="DEBUG", logger=logger, milliseconds=True)
 
 
 def text_to_bf(data):
@@ -26,9 +30,7 @@ def text_to_bf(data):
     code += "+" * number_of_bins
     current_bin = 0
     for char in data:
-        new_bin = [abs(ord(char) - b)
-                   for b in bins].index(min([abs(ord(char) - b)
-                                             for b in bins]))
+        new_bin = [abs(ord(char) - b) for b in bins].index(min([abs(ord(char) - b) for b in bins]))
         if new_bin - current_bin > 0:
             appending_character = ">"
         else:
@@ -52,14 +54,14 @@ def bf_to_text(string):
 def start(bot, update):
     user = update.message.from_user
     message = "Welcome to Brainf*ckBot. \n----------------------------------\nI hope you have fun.\n\nLook at the things you can do: \nℹ️ /help To display the full options\n🔒 /info To view the author"
-    logger.debug('[/start] _id:{id} _username:{username}'.format(id=user.id, username=user.username))
+    logger.debug("[/start] _id:{id} _username:{username}".format(id=user.id, username=user.username))
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 
 def help(bot, update):
     user = update.message.from_user
     message = "Brainf*ckBot. \n----------------------------------\nOptions:\nℹ️ /help To display the options\n🔒 /code <Natural language message> To code a message\n🔑 /decode <Brainfuck message> To decode a message\n🤓 /info To view the author\n\nNOW!\n You can use this bot on inline mode:\nSteps:\n1-Go to a friend's chat\n2-Type the command you want in the message box, naming the bot and adding a message\n(@Brainfckbot /code <text> or @Brainfckbot /decode <bf>)\n3-Send the result to your friends\nHAVE FUN!"
-    logger.debug('[/help] _id:{id} _username:{username}'.format(id=user.id, username=user.username))
+    logger.debug("[/help] _id:{id} _username:{username}".format(id=user.id, username=user.username))
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 
@@ -71,10 +73,10 @@ def inline(bot, update):
     text = query[1:]
     command = (query[0])[1:]
     result = message = ""
-    if command == 'code':
+    if command == "code":
         message = "Send coded text: "
         result = code(bot, update, text, True)
-    if command == 'decode':
+    if command == "decode":
         message = "Send decoded text: "
         result = decode(bot, update, text, True)
     if result:
@@ -84,7 +86,8 @@ def inline(bot, update):
             title="{message}".format(message=message),
             description="{text}".format(text=result),
             thumb_url=BOT_IMAGE,
-            input_message_content=InputTextMessageContent(result))
+            input_message_content=InputTextMessageContent(result),
+        )
         results.append(text)
         bot.answerInlineQuery(update.inline_query.id, results=results)
 
@@ -105,18 +108,27 @@ def code(bot, update, input_text, inline_flag):
         else:
             user = update.message.from_user
         if len(input_text[0]) > 140:
-            logger.warning('[/code] {inline} The maximum message size is 140 characters'.format(
-                inline="[inline]" if inline_flag else ""))
+            logger.warning(
+                "[/code] {inline} The maximum message size is 140 characters".format(
+                    inline="[inline]" if inline_flag else ""
+                )
+            )
             text = "⚠️ The maximum message size is 140 characters"
             return text
         else:
             text = ""
             for word in input_text:
-                text = text + word + ' '
+                text = text + word + " "
             bf_text = text_to_bf(text)
-            logger.debug('[/code] {inline} _id:{id} _username:{username} _text:{text} _bf:{bf}'.format(
-                inline="[inline]" if inline_flag else "", id=user.id, username=user.username,
-                text=input_text[0], bf=bf_text))
+            logger.debug(
+                "[/code] {inline} _id:{id} _username:{username} _text:{text} _bf:{bf}".format(
+                    inline="[inline]" if inline_flag else "",
+                    id=user.id,
+                    username=user.username,
+                    text=input_text[0],
+                    bf=bf_text,
+                )
+            )
             return bf_text
 
 
@@ -137,19 +149,20 @@ def decode(bot, update, input_text, inline_flag):
             user = update.message.from_user
         bf = ""
         for word in input_text:
-            bf = bf + word + ' '
+            bf = bf + word + " "
         text = bf_to_text(bf)
         logger.debug(
-            '[/decode] {inline} _id:{id} _username:{username} _text:{text} _bf:{bf}'.format(
-                inline="[inline]" if inline_flag else "", id=user.id, username=user.username,
-                text=text, bf=bf))
+            "[/decode] {inline} _id:{id} _username:{username} _text:{text} _bf:{bf}".format(
+                inline="[inline]" if inline_flag else "", id=user.id, username=user.username, text=text, bf=bf
+            )
+        )
         return text
 
 
 def info(bot, update):
     user = update.message.from_user
     message = "Bot created by 👨‍💻 @longopy (https://github.com/longopy) \nThanks to bareba and yiangos"
-    logger.debug('[/info] _id:{id} _username:{username}'.format(id=user.id, username=user.username))
+    logger.debug("[/info] _id:{id} _username:{username}".format(id=user.id, username=user.username))
     bot.send_message(chat_id=update.message.chat_id, text=message)
 
 
@@ -159,13 +172,12 @@ if __name__ == "__main__":
     try:
         logger.info("Connecting to the Telegram API...")
         dispatcher = updater.dispatcher
-        dispatcher.add_handler(CommandHandler('start', start))
-        dispatcher.add_handler(CommandHandler('help', help))
-        dispatcher.add_handler(CommandHandler('code', code_command, pass_args=True))
-        dispatcher.add_handler(CommandHandler('decode', decode_command, pass_args=True))
-        dispatcher.add_handler(CommandHandler('info', info))
+        dispatcher.add_handler(CommandHandler("start", start))
+        dispatcher.add_handler(CommandHandler("help", help))
+        dispatcher.add_handler(CommandHandler("code", code_command, pass_args=True))
+        dispatcher.add_handler(CommandHandler("decode", decode_command, pass_args=True))
+        dispatcher.add_handler(CommandHandler("info", info))
         dispatcher.add_handler(InlineQueryHandler(inline))
-
 
     except Exception as ex:
         logger.exception("Failure to connect with the Telegram API")
@@ -174,6 +186,9 @@ if __name__ == "__main__":
     finally:
         logger.info("Connection completed")
 
-updater.start_polling()
+updater.start_webhook(listen="0.0.0.0",
+                      port=int(PORT),
+                      url_path=BOT_TOKEN,
+                      webhook_url=HEROKU_APP_URL + BOT_TOKEN)
 logger.info("Listening...")
 updater.idle()
