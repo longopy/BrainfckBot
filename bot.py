@@ -12,6 +12,7 @@ import bf2t
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 BOT_IMAGE = os.environ.get("BOT_IMAGE")
 MAX_LENGTH = os.environ.get("MAX_LENGTH", 350)
+TIMEOUT = os.environ.get("TIMEOUT", 3)
 
 
 def text_to_bf(data):
@@ -40,7 +41,7 @@ def text_to_bf(data):
     return code
 
 
-@timeout(3)
+@timeout(TIMEOUT)
 def bf_to_text(string):
     parser = bf2t.BFInterpreter()
     return parser.execute(string)
