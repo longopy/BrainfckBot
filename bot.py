@@ -6,15 +6,17 @@ import coloredlogs
 import telegram
 from telegram import InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import Updater, CommandHandler, InlineQueryHandler
+from wrapt_timeout_decorator import timeout
 
 import bf2t
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 BOT_IMAGE = os.environ.get("BOT_IMAGE")
+MAX_LENGTH = os.environ.get("MAX_LENGTH", 350)
 BOT = telegram.Bot(token=BOT_TOKEN)
-updater = Updater(BOT_TOKEN, use_context=False)
 
-logger = logging.getLogger("BrainfckBot")
+logger = logging.getLogger('BrainfckBot')
+updater = Updater(BOT_TOKEN, use_context=False)
 coloredlogs.install(level="DEBUG", logger=logger, milliseconds=True)
 
 
@@ -44,6 +46,7 @@ def text_to_bf(data):
     return code
 
 
+@timeout(3)
 def bf_to_text(string):
     parser = bf2t.BFInterpreter()
     return parser.execute(string)
@@ -105,13 +108,16 @@ def code(bot, update, input_text, inline_flag):
             user = update.inline_query.from_user
         else:
             user = update.message.from_user
-        if len(input_text[0]) > 140:
+        if len(" ".join(input_text)) > MAX_LENGTH:
             logger.warning(
-                "[/code] {inline} The maximum message size is 140 characters".format(
-                    inline="[inline]" if inline_flag else ""
+                "[/code] {inline} The maximum message size is {max_length} characters".format(
+                    inline="[inline]" if inline_flag else "",
+                    max_length=MAX_LENGTH,
                 )
             )
-            text = "⚠️ The maximum message size is 140 characters"
+            text = "⚠️ The maximum message size is {max_length} characters".format(
+                    max_length=MAX_LENGTH,
+                )
             return text
         else:
             text = ""
@@ -148,7 +154,10 @@ def decode(bot, update, input_text, inline_flag):
         bf = ""
         for word in input_text:
             bf = bf + word + " "
-        text = bf_to_text(bf)
+        try:
+            text = bf_to_text(bf)
+        except:
+            text = "🖕Do you think I suck my thumb? Don't try to break me."
         logger.debug(
             "[/decode] {inline} _id:{id} _username:{username} _text:{text} _bf:{bf}".format(
                 inline="[inline]" if inline_flag else "", id=user.id, username=user.username, text=text, bf=bf
