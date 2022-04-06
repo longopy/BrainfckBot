@@ -9,10 +9,8 @@ from telegram.ext import Updater, CommandHandler, InlineQueryHandler
 
 import bf2t
 
-HEROKU_APP_URL = os.environ.get('HEROKU_APP_URL')
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 BOT_IMAGE = os.environ.get("BOT_IMAGE")
-PORT = os.getenv('PORT', default=8443)
 BOT = telegram.Bot(token=BOT_TOKEN)
 updater = Updater(BOT_TOKEN, use_context=False)
 
@@ -186,9 +184,6 @@ if __name__ == "__main__":
     finally:
         logger.info("Connection completed")
 
-updater.start_webhook(listen="0.0.0.0",
-                      port=int(PORT),
-                      url_path=BOT_TOKEN,
-                      webhook_url=HEROKU_APP_URL + BOT_TOKEN)
+updater.start_polling()
 logger.info("Listening...")
 updater.idle()
