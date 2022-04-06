@@ -14,9 +14,9 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")
 BOT_IMAGE = os.environ.get("BOT_IMAGE")
 MAX_LENGTH = os.environ.get("MAX_LENGTH", 350)
 BOT = telegram.Bot(token=BOT_TOKEN)
-updater = Updater(BOT_TOKEN, use_context=False)
 
 logger = logging.getLogger('BrainfckBot')
+updater = Updater(BOT_TOKEN, use_context=False)
 coloredlogs.install(level="DEBUG", logger=logger, milliseconds=True)
 
 
