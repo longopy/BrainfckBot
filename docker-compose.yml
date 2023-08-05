@@ -1,0 +1,14 @@
+version: '3'
+services:
+  brainfckbot:
+    container_name: 'brainfckbot'
+    image: python:3.9-alpine
+    volumes:
+      - .:/usr/src/app
+    env_file:
+      - .env
+    build: .
+    working_dir: /usr/src/app
+    command: >
+      sh -c "pip install -r requirements.txt
+      && python bot.py"
